@@ -1,8 +1,10 @@
 package gr.ienu.ienufx.service;
 
+import gr.ienu.ienufx.config.ExchangeRateProperties;
 import gr.ienu.ienufx.dto.ExchangeRateResponse;
 import gr.ienu.ienufx.dto.FrankfurterResponse;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.reactive.function.client.WebClient;
 import reactor.core.publisher.Mono;
 
@@ -11,12 +13,20 @@ import java.math.BigDecimal;
 @Service
 public class ExchangeRateService {
 
+	private static final String DEFAULT_BASE_URL = "https://api.frankfurter.app";
+
 	private final WebClient webClient;
 
-	public ExchangeRateService() {
-		this.webClient = WebClient.builder()
-				.baseUrl("https://api.frankfurter.app")
-				.build();
+	public ExchangeRateService(WebClient.Builder webClientBuilder, ExchangeRateProperties properties) {
+		String configuredBaseUrl = resolveBaseUrl(properties);
+		this.webClient = webClientBuilder.baseUrl(configuredBaseUrl).build();
+	}
+
+	private String resolveBaseUrl(ExchangeRateProperties properties) {
+		if (properties == null || !StringUtils.hasText(properties.getBaseUrl())) {
+			return DEFAULT_BASE_URL;
+		}
+		return properties.getBaseUrl().trim();
 	}
 
 	public Mono<ExchangeRateResponse> getExchangeRate(String fromCurrency, String toCurrency) {
